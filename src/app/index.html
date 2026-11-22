@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>コード練習</title>
+<style>
+:root {
+  --bg: #f4f6f9; --panel: #ffffff; --ink: #1c2230; --muted: #5b6475; --line: #d3d8e0;
+  --target: #2f6fdf; --good: #1d9a52; --bad: #e0761a; --press: #98a1b0;
+  --wkey: #ffffff; --bkey: #222730; --banner: #fff3d1; --banner-ink: #4f3b00; --btn: #2f6fdf; --btn-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #13161b; --panel: #1b1f26; --ink: #e8ebf0; --muted: #9aa3b2; --line: #343a45;
+    --wkey: #eceff4; --bkey: #0b0d11; --banner: #3a3115; --banner-ink: #ffe7a3; --btn: #4a86f0; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", system-ui, sans-serif; padding: max(8px, env(safe-area-inset-top)) 16px 16px; -webkit-text-size-adjust: 100%; }
+button { font: inherit; font-size: 18px; min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); touch-action: manipulation; }
+button.primary { background: var(--btn); color: var(--btn-ink); border-color: transparent; font-weight: 600; }
+button.big { min-height: 56px; font-size: 20px; padding: 0 22px; }
+#lessons button[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); border-color: transparent; font-weight: 600; }
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 0 8px; }
+header h1 { font-size: 22px; margin: 0 6px 0 0; }
+#lessons { display: flex; gap: 8px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.pill { font-size: 15px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); white-space: nowrap; }
+.pill.ok { color: var(--good); border-color: var(--good); }
+.pill.ng { color: var(--bad); border-color: var(--bad); }
+.banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--banner); color: var(--banner-ink); border-radius: 12px; padding: 10px 14px; margin: 4px 0; font-size: 18px; }
+.banner[hidden], [hidden] { display: none !important; }
+.banner span { flex: 1 1 320px; }
+.prompt { text-align: center; }
+#pMain { font-size: clamp(34px, 5.4vw, 60px); font-weight: 700; line-height: 1.15; }
+#pSub { font-size: clamp(17px, 2.1vw, 23px); color: var(--muted); margin-top: 2px; }
+.fb { text-align: center; font-size: clamp(19px, 2.4vw, 26px); min-height: 1.45em; margin-top: 6px; }
+.fb.good { color: var(--good); font-weight: 600; }
+.fb.bad { color: var(--bad); }
+#fb2, #progress, #oor { text-align: center; font-size: 17px; min-height: 1.35em; }
+#fb2, #progress { color: var(--muted); }
+#oor { color: var(--bad); }
+svg { display: block; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#overview { width: min(100%, 560px); height: auto; margin: 4px auto 0; }
+#keyboard { width: 100%; height: auto; margin-top: 4px; }
+#keyboard.touch { touch-action: none; }
+.ow { fill: var(--wkey); stroke: var(--line); }
+.ob { fill: var(--bkey); }
+.oz { fill: none; stroke: var(--target); stroke-width: 2; }
+.od { stroke: var(--panel); stroke-width: 1.5; }
+.od.press { fill: var(--press); } .od.good { fill: var(--good); } .od.bad { fill: var(--bad); }
+.key rect { stroke: #8b93a1; stroke-width: 1; }
+.key.white rect { fill: var(--wkey); }
+.key.black rect { fill: var(--bkey); }
+.key.target rect { fill: var(--target); }
+.key.good rect { fill: var(--good); }
+.key.bad rect { fill: var(--bad); }
+.key.press rect { fill: var(--press); }
+.kl { font-size: 19px; text-anchor: middle; fill: #4a5262; }
+.kj { font-size: 23px; text-anchor: middle; fill: #1c2230; font-weight: 600; }
+.key.target text, .key.good text, .key.bad text { fill: #ffffff; }
+.kmark { font-size: 19px; text-anchor: middle; fill: var(--muted); }
+footer { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+#ver { color: var(--muted); font-size: 14px; }
+#logBox { margin-top: 10px; }
+#logBox textarea { width: 100%; height: 140px; font: 12px ui-monospace, Menlo, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>コード練習</h1>
+  <div id="lessons"></div>
+  <span class="spacer"></span>
+  <span class="pill" id="conn">確認中…</span>
+</header>
+<div class="banner" id="connBanner" hidden>
+  <span id="connMsg"></span>
+  <button class="primary big" id="btnBt" hidden>Bluetooth で繋ぐ</button>
+  <button class="primary big" id="btnPerm" hidden>MIDI を許可</button>
+</div>
+<div class="banner" id="verBanner" hidden>
+  <span>新しい版が出ています。読み直すと切り替わります。</span>
+  <button class="primary" id="btnReload">読み直す</button>
+</div>
+<main>
+  <div class="prompt"><div id="pMain"></div><div id="pSub"></div></div>
+  <div class="fb" id="fb"></div>
+  <div id="fb2"></div>
+  <div id="progress"></div>
+  <svg id="overview" aria-label="ピアノ全体の図"></svg>
+  <div id="oor"></div>
+  <svg id="keyboard" aria-label="鍵盤"></svg>
+</main>
+<footer>
+  <button id="btnRestart">最初から</button>
+  <button id="btnTouch" aria-pressed="false">画面の鍵盤で弾く：オフ</button>
+  <button id="btnLog">記録を書き出す</button>
+  <span class="spacer"></span>
+  <span id="ver"></span>
+</footer>
+<div id="logBox" hidden><div id="logMsg"></div><textarea id="logText" readonly></textarea></div>
+
+<script type="module">
+import { BUILD, NAMES, DOREMI, pc, isWhite, noteName, label, createParser, classify, createKeys, createRunner, LESSONS } from './core.js';
+
+const $ = id => document.getElementById(id);
+const now = () => performance.now();
+const T0 = now();
+const LANDMARK = 'ヒント：ドは黒鍵 2 本のすぐ左、ファは黒鍵 3 本のすぐ左の白鍵です';
+$('ver').textContent = BUILD;
+
+// ---------- 記録（相談用。端末の識別子は入れない） ----------
+const LOG = { build: BUILD, started: new Date().toISOString(), ua: navigator.userAgent, perm: [], conn: [], ver: [], lessons: [], events: [] };
+const push = (arr, o, max) => { arr.push(Object.assign({ t: Math.round(now() - T0) }, o)); if (arr.length > max) arr.shift(); };
+
+// ---------- 鍵盤の絵 ----------
+const NS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+const LO = 48, HI = 83;                         // 大きい鍵盤：C3〜B5 の 3 オクターブ
+const KW = 60, KH = 240, BKW = 36, BKH = 150;
+const OV = { W: 10, H: 40, BW: 6, BH: 25 };     // 全体図（88 鍵）
+const whiteIndex = (from, n) => { let c = 0; for (let m = from; m < n; m++) if (isWhite(m)) c++; return c; };
+const ovX = n => whiteIndex(21, n) * OV.W + (isWhite(n) ? OV.W / 2 : 0);
+const keyEls = new Map();
+let ovDots = null, touchOn = false;
+
+(function buildOverview() {
+  const svg = $('overview'), { W, H, BW, BH } = OV, blacks = [];
+  for (let n = 21, wi = 0; n <= 108; n++) { if (isWhite(n)) svg.appendChild(svgEl('rect', { x: (wi++) * W, y: 0, width: W, height: H, class: 'ow' })); else blacks.push(wi * W - BW / 2); }
+  blacks.forEach(x => svg.appendChild(svgEl('rect', { x, y: 0, width: BW, height: BH, class: 'ob' })));
+  const x0 = whiteIndex(21, LO) * W, x1 = (whiteIndex(21, HI) + 1) * W;
+  svg.appendChild(svgEl('rect', { x: x0, y: 1, width: x1 - x0, height: H - 2, class: 'oz' }));
+  svg.setAttribute('viewBox', `0 0 ${whiteIndex(21, 109) * W} ${H}`);
+  ovDots = svgEl('g', {}); svg.appendChild(ovDots);
+})();
+
+(function buildKeyboard() {
+  const svg = $('keyboard'), whites = [], blacks = [];
+  for (let n = LO, wi = 0; n <= HI; n++) { if (isWhite(n)) whites.push({ n, x: (wi++) * KW }); else blacks.push({ n, x: wi * KW - BKW / 2 }); }
+  svg.setAttribute('viewBox', `0 0 ${whites.length * KW} ${KH + 34}`);
+  const add = (k, white) => {
+    const g = svgEl('g', { class: 'key ' + (white ? 'white' : 'black'), 'data-note': k.n });
+    g.appendChild(svgEl('rect', white ? { x: k.x + 1, y: 1, width: KW - 2, height: KH, rx: 6 } : { x: k.x, y: 1, width: BKW, height: BKH, rx: 4 }));
+    if (white) {
+      const p = pc(k.n);
+      g.appendChild(svgEl('text', { x: k.x + KW / 2, y: KH - 52, class: 'kl' }, p === 0 ? noteName(k.n) : NAMES[p]));
+      g.appendChild(svgEl('text', { x: k.x + KW / 2, y: KH - 18, class: 'kj' }, DOREMI[p]));
+    }
+    // 画面の鍵盤で弾く（オンの時だけ。指ごとに追う）
+    const down = e => { if (!touchOn) return; e.preventDefault(); try { g.setPointerCapture(e.pointerId); } catch (_) {} input('screen', { type: 'on', ch: 0, note: k.n, vel: 80 }); };
+    const up = () => { if (touchOn) input('screen', { type: 'off', ch: 0, note: k.n, vel: 0 }); };
+    g.addEventListener('pointerdown', down);
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => g.addEventListener(t, up));
+    svg.appendChild(g); keyEls.set(k.n, g);
+  };
+  whites.forEach(k => add(k, true)); blacks.forEach(k => add(k, false));   // 黒鍵を後に描いて上に重ねる
+  const xc = whites.findIndex(k => k.n === 60) * KW + KW / 2;
+  svg.appendChild(svgEl('text', { x: xc, y: KH + 26, class: 'kmark' }, '▲ 真ん中のド'));
+})();
+
+// ---------- 入力と練習 ----------
+const keys = createKeys();
+let runner = null;
+
+function after(result) {
+  if (result === 'done' && runner) push(LOG.lessons, { id: runner.lesson.id, hits: runner.hits, misses: runner.misses }, 50);
+}
+function input(src, ev) {
+  keys.apply(src, ev);
+  if (runner && (ev.type === 'on' || ev.type === 'off')) after(runner.update(keys.held(), ev.type));
+  render();
+}
+function clearInput(src) {   // 切断・画面が裏に回った・やり直し：押している音とペダルを解除する
+  keys.clear(src);
+  if (runner) after(runner.update(keys.held(), 'clear'));
+  render();
+}
+
+LESSONS.forEach((l, i) => {
+  const b = document.createElement('button');
+  b.textContent = l.title; b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => startLesson(i));
+  $('lessons').appendChild(b);
+});
+function startLesson(i) {
+  runner = createRunner(LESSONS[i]);
+  keys.clear();
+  document.querySelectorAll('#lessons button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === i)));
+  render();
+}
+$('btnRestart').addEventListener('click', () => { if (!runner) return; runner.restart(); keys.clear(); render(); });
+
+function itemText(it) {
+  if (it.kind === 'note') { const p = pc(it.notes[0]); return [DOREMI[p] + '（' + NAMES[p] + '）', '青い鍵盤を弾きます。同じ名前なら、どの高さでも正解です']; }
+  return [it.chord, it.jp + ' の 3 つを、同時に押さえます'];
+}
+function setText(main, sub, fb, fb2, cls) {
+  $('pMain').textContent = main; $('pSub').textContent = sub;
+  $('fb').textContent = fb || ''; $('fb').className = 'fb' + (cls ? ' ' + cls : '');
+  $('fb2').textContent = fb2 || '';
+}
+function render() {
+  const held = keys.held();
+  const it = runner && !runner.done ? runner.item : null;
+  const tp = new Set(it ? it.notes.map(pc) : []), tn = new Set(it ? it.notes : []);
+  if (!runner) { setText('練習を選んでください', '上のボタンから 1 つ選びます'); $('progress').textContent = ''; }
+  else if (runner.done) { setText('おつかれさま！', `できた ${runner.hits} / ${runner.total}・違う鍵盤 ${runner.misses} 回`, '', 'もう一度なら「最初から」、ほかの練習は上のボタンから'); $('progress').textContent = ''; }
+  else {
+    const [main, sub] = itemText(it), L = runner.last;
+    if (runner.phase === 'good') setText(main, sub, '○ できた！ 指を離すと次へ', '', 'good');
+    else if (L.state === 'bad') setText(main, sub, '× 押しているのは ' + L.wrong.map(label).join('・') + '　弾くのは ' + it.notes.map(label).join('・'), LANDMARK, 'bad');
+    else if (L.state === 'extra') setText(main, sub, '押さえるのは 3 つです。いったん離してから押し直します', '', 'bad');
+    else if (L.state === 'partial') setText(main, sub, 'あと ' + L.missing.map(p => DOREMI[p]).join('・'), '');
+    else setText(main, sub, '', '');
+    $('progress').textContent = `${runner.index + 1} / ${runner.total}　できた ${runner.hits}`;
+  }
+  keyEls.forEach((g, n) => {
+    let c = 'key ' + (isWhite(n) ? 'white' : 'black');
+    if (held.has(n)) c += it ? (tp.has(pc(n)) ? ' good' : ' bad') : ' press';
+    else if (tn.has(n)) c += ' target';
+    g.setAttribute('class', c);
+  });
+  // 押している鍵盤は全体図にも点で出す。大きい鍵盤の外なら文字でも出す
+  ovDots.textContent = '';
+  held.forEach(n => { if (n >= 21 && n <= 108) ovDots.appendChild(svgEl('circle', { cx: ovX(n), cy: isWhite(n) ? OV.H - 8 : OV.BH - 7, r: 4.5, class: 'od ' + (it ? (tp.has(pc(n)) ? 'good' : 'bad') : 'press') })); });
+  const left = [...held].filter(n => n < LO).sort((a, b) => a - b), right = [...held].filter(n => n > HI).sort((a, b) => a - b);
+  $('oor').textContent = [left.length ? '◀ 絵の外（左）：' + left.map(label).join('・') : '', right.length ? '絵の外（右）：' + right.map(label).join('・') + ' ▶' : ''].filter(Boolean).join('　');
+}
+
+// ---------- 接続 ----------
+const hasMidi = typeof navigator.requestMIDIAccess === 'function';
+// 注意：id="midiweb" の要素があると window.midiweb がその要素になるので Element は除く
+const getMw = () => { const m = window.midiweb; return (m && typeof m === 'object' && !(m instanceof Element)) ? m : null; };
+const canBt = () => { const m = getMw(); return !!(m && typeof m.openBluetoothMIDI === 'function'); };
+// MIDIWeb 自身の仮想ポートは名前で見分ける（製造元の表記は実機にも付くことがあるので使わない）
+const isVirtual = p => /^midiweb (in|out)$/.test(String(p.name || '').trim().toLowerCase());
+const parsers = new WeakMap();
+let access = null, attached = new WeakSet(), reqBusy = false, reqGen = 0, everLive = false, liveCount = 0, conn = '';
+
+function setConn(state, detail) {
+  if (state !== conn) push(LOG.conn, { state, detail: detail || '' }, 200);
+  conn = state;
+  const pill = $('conn');
+  const show = (text, bt, perm) => { $('connMsg').textContent = text; $('btnBt').hidden = !bt; $('btnPerm').hidden = !perm; $('connBanner').hidden = !text; };
+  pill.className = 'pill';
+  if (state === 'connected') { pill.textContent = '繋がっています'; pill.className = 'pill ok'; show('', false, false); }
+  else if (state === 'requesting') { pill.textContent = '確認中…'; show('', false, false); }
+  else if (state === 'no-midi') { pill.textContent = 'ピアノは使えません'; show('このブラウザでは電子ピアノを使えません。iPad では MIDIWeb Browser で開いてください。「画面の鍵盤で弾く」なら練習できます。', false, false); }
+  else if (state === 'need-permission') { pill.textContent = '許可が必要'; pill.className = 'pill ng'; show('ピアノを使うには、MIDI の許可が要ります。', false, true); }
+  else if (state === 'no-device') { pill.textContent = 'ピアノ未接続'; pill.className = 'pill ng'; show(canBt() ? 'ピアノが見つかりません。「Bluetooth で繋ぐ」を押して、ATX4 を「接続済み」にしてください。' : 'ピアノが見つかりません。Mac では、ピアノを USB か Bluetooth で繋いでから読み直してください。', canBt(), false); }
+  else if (state === 'lost') { pill.textContent = '切れました'; pill.className = 'pill ng'; show('ピアノとの接続が切れました。ピアノの電源を入れ直したら、「Bluetooth で繋ぐ」を押してください。', canBt(), false); }
+}
+function onMidi(ev, port) {
+  if (isVirtual(port)) return;
+  let feed = parsers.get(port); if (!feed) { feed = createParser(); parsers.set(port, feed); }
+  for (const m of feed(Array.from(ev.data || []))) {
+    push(LOG.events, { raw: m }, 600);
+    const c = classify(m);
+    if (c.type === 'on' || c.type === 'off' || c.type === 'cc') input('midi', c);
+  }
+}
+function refreshPorts(via) {
+  if (!access) return;
+  access.inputs.forEach(p => { if (attached.has(p)) return; attached.add(p); p.onmidimessage = ev => onMidi(ev, p); });
+  const live = []; access.inputs.forEach(p => { if (!isVirtual(p) && p.state === 'connected') live.push(p); });
+  if (live.length) { if (!everLive) push(LOG.conn, { state: 'first-device', detail: via }, 200); everLive = true; setConn('connected', live.map(p => p.name).join('・')); }
+  else { if (liveCount > 0) clearInput('midi'); setConn(everLive ? 'lost' : 'no-device'); }
+  liveCount = live.length;
+}
+// 開いた時に自動で許可を求める（MIDIWeb は 2 回目以降すぐ許可を返す。実機 3 回目で 2〜24 ms）。
+// 4 秒たっても返事が無ければ「MIDI を許可」を出す。返事が後から来たら、それも使う
+async function requestAccess(via) {
+  if (!hasMidi) { setConn('no-midi'); return; }
+  if (reqBusy) return;
+  reqBusy = true; const gen = ++reqGen, t1 = now();
+  setConn('requesting');
+  const timer = setTimeout(() => { if (gen === reqGen && reqBusy) { reqBusy = false; push(LOG.perm, { via, result: 'slow' }, 50); if (!access) setConn('need-permission'); } }, via === 'load' ? 4000 : 20000);
+  try {
+    const a = await navigator.requestMIDIAccess({ sysex: false });
+    push(LOG.perm, { via, result: 'granted', ms: Math.round(now() - t1) }, 50);
+    if (access && access !== a) { if (gen !== reqGen) return; access.onstatechange = null; access.inputs.forEach(p => { p.onmidimessage = null; }); }
+    if (access !== a) { access = a; attached = new WeakSet(); a.onstatechange = () => refreshPorts('statechange'); }
+    refreshPorts(via);
+  } catch (e) {
+    push(LOG.perm, { via, result: 'error', name: (e && e.name) || '' }, 50);
+    if (!access && gen === reqGen) setConn('need-permission');
+  } finally { clearTimeout(timer); if (gen === reqGen) reqBusy = false; }
+}
+$('btnPerm').addEventListener('click', () => requestAccess('button'));
+$('btnBt').addEventListener('click', () => {
+  const m = getMw();
+  if (!(m && typeof m.openBluetoothMIDI === 'function')) return;
+  // MIDIWeb は、MIDI の許可の画面が出ている間は Bluetooth の画面を開けない
+  if (reqBusy) { $('connMsg').textContent = '先に、MIDI の許可の画面に答えてください。'; return; }
+  let r; try { r = m.openBluetoothMIDI(); } catch (e) { r = 'error'; }
+  push(LOG.conn, { state: 'bt-open', detail: String(r) }, 200);
+});
+setInterval(() => refreshPorts('poll'), 1000);
+
+// ---------- 版の確認（MIDIWeb はページを何日も開いたままにするので、新しい版を知らせる） ----------
+async function checkVersion(via) {
+  try {
+    const r = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const v = await r.json();
+    push(LOG.ver, { via, latest: v.build }, 50);
+    $('verBanner').hidden = !(v && v.build && v.build !== BUILD);
+  } catch (e) { /* オフラインなど。何もしない */ }
+}
+$('btnReload').addEventListener('click', () => location.reload());
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') clearInput();
+  else { refreshPorts('visible'); checkVersion('visible'); }
+});
+
+$('btnTouch').addEventListener('click', () => {
+  touchOn = !touchOn;
+  $('btnTouch').setAttribute('aria-pressed', String(touchOn));
+  $('btnTouch').textContent = '画面の鍵盤で弾く：' + (touchOn ? 'オン' : 'オフ');
+  $('keyboard').classList.toggle('touch', touchOn);
+  if (!touchOn) clearInput('screen');
+});
+
+$('btnLog').addEventListener('click', async () => {
+  LOG.state = { conn, everLive, lesson: runner ? runner.lesson.id : null, index: runner ? runner.index : null, exported: new Date().toISOString() };
+  const text = JSON.stringify(LOG);
+  $('logBox').hidden = false; $('logText').value = text;
+  try { await navigator.clipboard.writeText(text); $('logMsg').textContent = 'コピーしました。会話に貼ってください。'; }
+  catch (e) { $('logMsg').textContent = 'コピーできませんでした。下の枠を長押しして「すべてを選択」、続けて「コピー」を押してください。'; }
+});
+
+render();
+if (hasMidi) requestAccess('load'); else setConn('no-midi');
+setTimeout(() => checkVersion('load'), 1500);
+</script>
+</body>
+</html>

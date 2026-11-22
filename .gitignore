@@ -1,0 +1,11 @@
+.DS_Store
+.env*
+logs/
+node_modules/
+__pycache__/
+*.pptx
+*.xlsx
+*.docx
+# 作業記録（公開リポジトリには含めない）
+codex/
+research/
